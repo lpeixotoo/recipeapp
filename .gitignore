@@ -1,0 +1,47 @@
+# User-specific files
+
+# macOS
+
+.DS_Store
+
+# Cli logs
+eqx.log
+
+# Test results
+*.trx
+
+# Build results
+msbuild.*
+.build/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio 2015+ cache/options directory
+.vs/
+*.fsproj.user
+
+# ReSharper is a .NET coding add-in
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# NCrunch
+_NCrunch_*
+.*crunch*.local.xml
+nCrunchTemp_*
+
+# NuGet Packages
+*.nupkg
+packages.config
+# The packages folder can be ignored because of Package Restore
+**/packages/*
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# CodeRush
+.cr/
+
+#Ionide
+.ionide/
