@@ -1,8 +1,16 @@
 ﻿module recipeapp.Todo
 
-let [<Literal>] Category = "Todos"
+let [<Literal>] Category = "Recipes"
 /// Maps a ClientId to the StreamName where data for that client will be held
 let streamName (clientId: ClientId) = FsCodec.StreamName.create Category (ClientId.toString clientId)
+
+[<AutoOpen>]
+module Types =
+    type Ingredient       = { id: int; food: string }
+    type Equipment        = { id: int; tool: string }
+    type RecipeIngredient = { ingredient: Ingredient; quantity: string; unit: string }
+    type RecipeEquipment  = { equipment: Equipment; quantity: int }
+    type Recipe           = { id: int; name: string; description: string; ingredients: RecipeIngredient list; equipments: RecipeEquipment list }
 
 // NB - these types and the union case names reflect the actual storage formats and hence need to be versioned with care
 module Events =
@@ -11,16 +19,18 @@ module Events =
     type DeletedData =  { id : int }
     type ClearedData =  { nextId : int }
     type SnapshotData = { nextId : int; items : ItemData[] }
+
     /// Events we keep in Todo-* streams
+    type IngredientEvent =
+        | AddedIngredient of Ingredient
+    type EquipmentEvent =
+        | AddedEquipment of Equipment
+    type RecipeEvent =
+        | AddedRecipe of Recipe
+        | UpdatedRecipe of Recipe
+
     type Event =
-        | Added         of ItemData
-        | Updated       of ItemData
-        | Deleted       of DeletedData
-        /// Cleared also `isOrigin` (see below) - if we see one of these, we know we don't need to look back any further
-        | Cleared       of ClearedData
-        /// For Cosmos, AccessStrategy.Snapshot maintains this as an event in the `u`nfolds list in the Tip-document
-        /// For EventStore, AccessStrategy.RollingSnapshots embeds these events every `batchSize` events
-        | Snapshotted   of SnapshotData
+        IngredientEvent | EquipmentEvent | RecipeEvent
         interface TypeShape.UnionContract.IUnionContract
     let codec = FsCodec.NewtonsoftJson.Codec.Create<Event>()
 
@@ -109,7 +119,7 @@ type Service internal (resolve : ClientId -> Equinox.Decider<Events.Event, Fold.
 
     (* WRITE *)
 
-    /// Execute the specified (blind write) command 
+    /// Execute the specified (blind write) command
     member _.Execute(clientId , command) : Async<unit> =
         execute clientId command
 
