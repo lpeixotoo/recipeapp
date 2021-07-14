@@ -58,37 +58,46 @@ module Fold =
         | Events.UpdatedRecipe   recipe     -> { state with recipes = state.recipes |>  List.map (function { id = id } when id = recipe.id -> recipe | item -> item) }
     /// Folds a set of events from the store into a given `state`
     let fold : State -> Events.Event seq -> State = Seq.fold evolve
-    /// Determines whether a given event represents a checkpoint that implies we don't need to see any preceding events
-    let isOrigin = function Events.Cleared _ | Events.Snapshotted _ -> true | _ -> false
-    /// Prepares an Event that encodes all relevant aspects of a State such that `evolve` can rehydrate a complete State from it
-    let snapshot state = Events.Snapshotted { nextId = state.nextId; items = Array.ofList state.items }
 
 /// Properties that can be edited on a Todo List item
-type Props = { order: int; title: string; completed: bool }
+type RecipeProps      = { name: string; description: string; ingredients: RecipeIngredient list; equipments: RecipeEquipment list }
+type IngredientProps  = { food: string }
+type EquipmentProps   = { tool: string }
 
 /// Defines the operations a caller can perform on a Todo List
 type Command =
-    /// Create a single item
-    | Add of Props
-    /// Update a single item
-    | Update of id: int * Props
-    /// Delete a single item from the list
-    | Delete of id: int
-    /// Complete clear the Todo list
-    | Clear
+    /// Create a single equipment
+    | AddEquipment of EquipmentProps
+    /// Create a single ingredient
+    | AddIngredient of IngredientProps
+    /// Create a single recipe
+    | AddRecipe of RecipeProps
+    /// Update a single recipe
+    | UpdateRecipe of id: int * RecipeProps
 
 /// Defines the decision process which maps from the intent of the `Command` to the `Event`s that represent that decision in the Stream
-let interpret c (state : Fold.State) =
-    let mkItem id (value : Props) : Events.ItemData = { id = id; order = value.order; title = value.title; completed = value.completed }
-    match c with
-    | Add value -> [Events.Added (mkItem state.nextId value)]
-    | Update (itemId, value) ->
-        let proposed = mkItem itemId value
-        match state.items |> List.tryFind (function { id = id } -> id = itemId) with
-        | Some current when current <> proposed -> [Events.Updated proposed]
+let interpret command (state : Fold.State) =
+    /// entity maker function
+    let mkEquipment id (value : EquipmentProps) : Equipment = { id = id; tool = value.tool }
+    let mkIngredient id (value : IngredientProps) : Ingredient = { id = id; food =  value.food }
+    let mkRecipe id (value : RecipeProps) : Recipe =
+        {
+            id = id;
+            name= value.name;
+            description = value.description;
+            ingredients = value.ingredients;
+            equipments = value.equipments
+        }
+
+    match command with
+    | AddEquipment equipment -> [Events.AddedEquipment (mkEquipment state.nextEquipmentId equipment )]
+    | AddIngredient ingredient -> [Events.AddedIngredient (mkIngredient state.nextIngredientId ingredient)]
+    | AddRecipe recipe -> [Events.AddedRecipe (mkRecipe state.nextRecipeId recipe)]
+    | UpdateRecipe (recipeId, recipe) ->
+        let updatedRecipe = mkRecipe recipeId recipe
+        match state.recipes |> List.tryFind (function {id = id} -> id = recipeId) with
+        | Some currentRecipe when currentRecipe <> updatedRecipe -> [Events.UpdatedRecipe updatedRecipe]
         | _ -> []
-    | Delete id -> if state.items |> List.exists (fun x -> x.id = id) then [Events.Deleted { id=id }] else []
-    | Clear -> if state.items |> List.isEmpty then [] else [Events.Cleared { nextId = state.nextId }]
 
 /// A single Item in the Todo List
 type View = { id: int; order: int; title: string; completed: bool }
