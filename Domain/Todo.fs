@@ -20,17 +20,12 @@ module Events =
     type ClearedData =  { nextId : int }
     type SnapshotData = { nextId : int; items : ItemData[] }
 
-    /// Events we keep in Todo-* streams
-    type IngredientEvent =
+    /// Events we keep in Recipes-* streams
+    type Event =
         | AddedIngredient of Ingredient
-    type EquipmentEvent =
         | AddedEquipment of Equipment
-    type RecipeEvent =
         | AddedRecipe of Recipe
         | UpdatedRecipe of Recipe
-
-    type Event =
-        IngredientEvent | EquipmentEvent | RecipeEvent
         interface TypeShape.UnionContract.IUnionContract
     let codec = FsCodec.NewtonsoftJson.Codec.Create<Event>()
 
@@ -38,16 +33,29 @@ module Events =
 module Fold =
 
     /// Present state of the Todo List as inferred from the Events we've seen to date
-    type State = { items : Events.ItemData list; nextId : int }
+    type State = {
+        recipes : Recipe list;
+        ingredients: Ingredient list;
+        equipments: Equipment list;
+        nextRecipeId: int;
+        nextIngredientId: int;
+        nextEquipmentId: int;
+    }
     /// State implied by the absence of any events on this stream
-    let initial = { items = []; nextId = 0 }
+    let initial = {
+        recipes = [];
+        ingredients = [];
+        equipments = [];
+        nextRecipeId = 0;
+        nextIngredientId = 0;
+        nextEquipmentId = 0;
+    }
     /// Compute State change implied by a given Event
     let evolve state = function
-        | Events.Added item    -> { state with items = item :: state.items; nextId = state.nextId + 1 }
-        | Events.Updated value -> { state with items = state.items |> List.map (function { id = id } when id = value.id -> value | item -> item) }
-        | Events.Deleted e     -> { state with items = state.items  |> List.filter (fun x -> x.id <> e.id) }
-        | Events.Cleared e     -> { nextId = e.nextId; items = [] }
-        | Events.Snapshotted s -> { nextId = s.nextId; items = List.ofArray s.items }
+        | Events.AddedEquipment  equipment  -> { state with equipments = equipment :: state.equipments; nextEquipmentId = state.nextEquipmentId + 1 }
+        | Events.AddedIngredient ingredient -> { state with ingredients = ingredient :: state.ingredients; nextIngredientId = state.nextIngredientId + 1 }
+        | Events.AddedRecipe     recipe     -> { state with recipes = recipe :: state.recipes; nextRecipeId = state.nextRecipeId + 1 }
+        | Events.UpdatedRecipe   recipe     -> { state with recipes = state.recipes |>  List.map (function { id = id } when id = recipe.id -> recipe | item -> item) }
     /// Folds a set of events from the store into a given `state`
     let fold : State -> Events.Event seq -> State = Seq.fold evolve
     /// Determines whether a given event represents a checkpoint that implies we don't need to see any preceding events
