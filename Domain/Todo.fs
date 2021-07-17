@@ -6,19 +6,14 @@ let streamName (clientId: ClientId) = FsCodec.StreamName.create Category (Client
 
 [<AutoOpen>]
 module Types =
-    type Ingredient       = { id: int; food: string }
     type Equipment        = { id: int; tool: string }
-    type RecipeIngredient = { ingredient: Ingredient; quantity: string; unit: string }
+    type Ingredient       = { id: int; food: string }
     type RecipeEquipment  = { equipment: Equipment; quantity: int }
+    type RecipeIngredient = { ingredient: Ingredient; quantity: string; unit: string }
     type Recipe           = { id: int; name: string; description: string; ingredients: RecipeIngredient list; equipments: RecipeEquipment list }
 
 // NB - these types and the union case names reflect the actual storage formats and hence need to be versioned with care
 module Events =
-
-    type ItemData =     { id : int; order : int; title : string; completed : bool }
-    type DeletedData =  { id : int }
-    type ClearedData =  { nextId : int }
-    type SnapshotData = { nextId : int; items : ItemData[] }
 
     /// Events we keep in Recipes-* streams
     type Event =
@@ -60,9 +55,9 @@ module Fold =
     let fold : State -> Events.Event seq -> State = Seq.fold evolve
 
 /// Properties that can be edited on a Todo List item
-type RecipeProps      = { name: string; description: string; ingredients: RecipeIngredient list; equipments: RecipeEquipment list }
-type IngredientProps  = { food: string }
 type EquipmentProps   = { tool: string }
+type IngredientProps  = { food: string }
+type RecipeProps      = { name: string; description: string; ingredients: RecipeIngredient list; equipments: RecipeEquipment list }
 
 /// Defines the operations a caller can perform on a Todo List
 type Command =
@@ -99,58 +94,72 @@ let interpret command (state : Fold.State) =
         | Some currentRecipe when currentRecipe <> updatedRecipe -> [Events.UpdatedRecipe updatedRecipe]
         | _ -> []
 
-/// A single Item in the Todo List
-type View = { id: int; order: int; title: string; completed: bool }
+/// Views
+type EquipmentView = Equipment
+type IngredientView = Ingredient
+type RecipeView = Recipe
 
-/// Defines operations that a Controller can perform on a Todo List
+/// Defines operations that a Controller can perform on a Recipe App
 type Service internal (resolve : ClientId -> Equinox.Decider<Events.Event, Fold.State>) =
 
-    let execute clientId command =
-        let decider = resolve clientId
-        decider.Transact(interpret command)
     let query clientId projection =
         let decider = resolve clientId
         decider.Query projection
-    let handle clientId command =
+    let handleEquipment clientId command =
         let decider = resolve clientId
         decider.Transact(fun state ->
             let events = interpret command state
             let state' = Fold.fold state events
-            state'.items, events)
+            state'.equipments, events)
+    let handleIngredient clientId command =
+        let decider = resolve clientId
+        decider.Transact(fun state ->
+            let events = interpret command state
+            let state' = Fold.fold state events
+            state'.ingredients, events)
+    let handleRecipe clientId command =
+        let decider = resolve clientId
+        decider.Transact(fun state ->
+            let events = interpret command state
+            let state' = Fold.fold state events
+            state'.recipes, events)
 
-    let render (item: Events.ItemData) : View =
-        {   id = item.id
-            order = item.order
-            title = item.title
-            completed = item.completed }
+    let existsIngredient (ingredientId: int) (ingredients: RecipeIngredient list) : bool =
+        ingredients |> List.exists (fun { ingredient = ingredient } -> ingredient.id = ingredientId)
 
     (* READ *)
+    member _.ListAllEquipments clientId  : Async<EquipmentView seq> =
+        query clientId (fun state -> seq { for equipment in state.equipments -> equipment })
 
-    /// List all open items
-    member _.List clientId  : Async<View seq> =
-        query clientId (fun x -> seq { for x in x.items -> render x })
+    member _.ListAllIngredients clientId  : Async<IngredientView seq> =
+        query clientId (fun state -> seq { for ingredient in state.ingredients -> ingredient })
 
-    /// Load details for a single specific item
-    member _.TryGet(clientId, id) : Async<View option> =
-        query clientId (fun x -> x.items |> List.tryFind (fun x -> x.id = id) |> Option.map render)
+    member _.ListAllRecipes clientId  : Async<RecipeView seq> =
+        query clientId (fun state -> seq { for recipe in state.recipes -> recipe })
 
-    (* WRITE *)
-
-    /// Execute the specified (blind write) command
-    member _.Execute(clientId , command) : Async<unit> =
-        execute clientId command
+    member _.ListRecipesPerIngredient(clientId, ingredientId)  : Async<RecipeView list> =
+        query clientId (fun state ->
+            state.recipes
+            |> List.filter (fun { ingredients = recipeIngredients } -> recipeIngredients |> existsIngredient ingredientId)
+        )
 
     (* WRITE-READ *)
-
-    /// Create a new ToDo List item; response contains the generated `id`
-    member _.Create(clientId, template: Props) : Async<View> = async {
-        let! state' = handle clientId (Add template)
-        return List.head state' |> render }
-
-    /// Update the specified item as referenced by the `item.id`
-    member _.Patch(clientId, id: int, value: Props) : Async<View> = async {
-        let! state' = handle clientId (Update (id, value))
-        return state' |> List.find (fun x -> x.id = id) |> render}
+    /// Create a new equipment; response contains the generated `id`
+    member _.CreateEquipment(clientId, equipmentTemplate: EquipmentProps) : Async<EquipmentView> = async {
+        let! state' = handleEquipment clientId (AddEquipment equipmentTemplate)
+        return List.head state' }
+    /// Create a new ingredient; response contains the generated `id`
+    member _.CreateIngredient(clientId, ingredientTemplate: IngredientProps) : Async<IngredientView> = async {
+        let! state' = handleIngredient clientId (AddIngredient ingredientTemplate)
+        return List.head state' }
+    /// Create a new recipe; response contains the generated `id`
+    member _.CreateRecipe(clientId, recipeTemplate: RecipeProps) : Async<RecipeView> = async {
+        let! state' = handleRecipe clientId (AddRecipe recipeTemplate)
+        return List.head state' }
+    /// Update the specified recipe as referenced by the `recipe.id`
+    member _.PatchRecipe(clientId, id: int, updatedRecipe: RecipeProps) : Async<RecipeView> = async {
+        let! state' = handleRecipe clientId (UpdateRecipe (id, updatedRecipe))
+        return state' |> List.find (fun x -> x.id = id)}
 
 let create resolveStream =
     let resolve = streamName >> resolveStream >> Equinox.createDecider
