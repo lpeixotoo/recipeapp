@@ -172,6 +172,15 @@ type Service internal (resolve : ClientId -> Equinox.Decider<Events.Event, Fold.
     member _.ListAllRecipes clientId  : Async<RecipeView seq> =
         query clientId (fun state -> seq { for recipe in state.recipes -> recipe })
 
+    member _.TryGetEquipment(clientId, equipmentId)  : Async<EquipmentView option> =
+        query clientId (fun state -> state.equipments |> List.tryFind(fun equipment -> equipment.id = equipmentId))
+
+    member _.TryGetIngredient(clientId, ingredientId)  : Async<IngredientView option> =
+        query clientId (fun state -> state.ingredients |> List.tryFind(fun ingredient -> ingredient.id = ingredientId))
+
+    member _.TryGetRecipe(clientId, recipeId)  : Async<RecipeView option> =
+        query clientId (fun state -> state.recipes |> List.tryFind(fun recipe -> recipe.id = recipeId))
+
     member _.ListRecipesPerIngredient(clientId, ingredientId)  : Async<RecipeView list> =
         query clientId (fun state ->
             state.recipes
