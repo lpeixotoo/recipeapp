@@ -19,6 +19,12 @@ type RecipesController(service: Todo.Service) =
         return recipes
     }
 
+    [<HttpGet "ingredient/{ingredientId:int}">]
+    member this.GetRecipesByIngredient([<FromClientIdHeader>]clientId : ClientId, ingredientId) : Async<list<Todo.RecipeView>> = async {
+        let! recipes = service.ListRecipesPerIngredient(clientId, ingredientId)
+        return recipes
+    }
+
     [<HttpPost>]
     member this.Post([<FromClientIdHeader>]clientId : ClientId, [<FromBody>]value : Todo.RecipeView) : Async<Todo.RecipeView> = async {
         let! createdRecipe = service.CreateRecipe(clientId, toProps value)
