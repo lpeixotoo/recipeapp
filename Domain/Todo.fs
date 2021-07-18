@@ -15,12 +15,23 @@ module Types =
 // NB - these types and the union case names reflect the actual storage formats and hence need to be versioned with care
 module Events =
 
+    type ClearedData = { nextRecipeId: int; nextIngredientId: int; nextEquipmentId: int }
+    type SnapshottedData = {
+        recipes : Recipe list;
+        ingredients: Ingredient list;
+        equipments: Equipment list;
+        nextRecipeId: int;
+        nextIngredientId: int;
+        nextEquipmentId: int;
+    }
     /// Events we keep in Recipes-* streams
     type Event =
         | AddedIngredient of Ingredient
         | AddedEquipment of Equipment
         | AddedRecipe of Recipe
         | UpdatedRecipe of Recipe
+        | Cleared of ClearedData
+        | Snapshotted of SnapshottedData
         interface TypeShape.UnionContract.IUnionContract
     let codec = FsCodec.NewtonsoftJson.Codec.Create<Event>()
 
@@ -51,8 +62,32 @@ module Fold =
         | Events.AddedIngredient ingredient -> { state with ingredients = ingredient :: state.ingredients; nextIngredientId = state.nextIngredientId + 1 }
         | Events.AddedRecipe     recipe     -> { state with recipes = recipe :: state.recipes; nextRecipeId = state.nextRecipeId + 1 }
         | Events.UpdatedRecipe   recipe     -> { state with recipes = state.recipes |>  List.map (function { id = id } when id = recipe.id -> recipe | item -> item) }
+        | Events.Cleared         e          -> {
+            recipes = [];
+            ingredients = [];
+            equipments = [];
+            nextRecipeId = e.nextRecipeId;
+            nextIngredientId = e.nextIngredientId;
+            nextEquipmentId= e.nextEquipmentId }
+        | Events.Snapshotted     s          -> {
+            recipes = s.recipes;
+            ingredients = s.ingredients;
+            equipments = s.equipments;
+            nextRecipeId = s.nextRecipeId;
+            nextIngredientId = s.nextIngredientId;
+            nextEquipmentId= s.nextEquipmentId }
     /// Folds a set of events from the store into a given `state`
     let fold : State -> Events.Event seq -> State = Seq.fold evolve
+    /// Determines whether a given event represents a checkpoint that implies we don't need to see any preceding events
+    let isOrigin = function Events.Cleared _ | Events.Snapshotted _ -> true | _ -> false
+    /// Prepares an Event that encodes all relevant aspects of a State such that `evolve` can rehydrate a complete State from it
+    let snapshot state = Events.Snapshotted {
+            recipes = state.recipes;
+            ingredients = state.ingredients;
+            equipments = state.equipments;
+            nextRecipeId = state.nextRecipeId;
+            nextIngredientId = state.nextIngredientId;
+            nextEquipmentId= state.nextEquipmentId }
 
 /// Properties that can be edited on a Todo List item
 type EquipmentProps   = { tool: string }

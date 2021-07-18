@@ -56,7 +56,7 @@ module Services =
     type IServiceCollection with
         /// Register a Service as a Singleton, by supplying a function that can build an instance of the type in question
         member services.Register(factory : IServiceProvider -> 'T) = services.AddSingleton<'T>(fun (sp: IServiceProvider) -> factory sp) |> ignore
-    
+
     /// F# syntactic sugar to resolve a service dependency
     type IServiceProvider with member sp.Resolve<'t>() = sp.GetRequiredService<'t>()
 
