@@ -1,4 +1,4 @@
-﻿module recipeapp.Todo
+﻿module RecipeApp.Recipe
 
 let [<Literal>] Category = "Recipes"
 /// Maps a ClientId to the StreamName where data for that client will be held
@@ -35,10 +35,10 @@ module Events =
         interface TypeShape.UnionContract.IUnionContract
     let codec = FsCodec.NewtonsoftJson.Codec.Create<Event>()
 
-/// Types and mapping logic used maintain relevant State based on Events observed on the Todo List Stream
+/// Types and mapping logic used maintain relevant State based on Events observed on the Recipe Stream
 module Fold =
 
-    /// Present state of the Todo List as inferred from the Events we've seen to date
+    /// Present state of the Recipe as inferred from the Events we've seen to date
     type State = {
         recipes : Recipe list;
         ingredients: Ingredient list;
@@ -89,12 +89,12 @@ module Fold =
             nextIngredientId = state.nextIngredientId;
             nextEquipmentId= state.nextEquipmentId }
 
-/// Properties that can be edited on a Todo List item
+/// Properties that can be edited on a Recipe item
 type EquipmentProps   = { tool: string }
 type IngredientProps  = { food: string }
 type RecipeProps      = { name: string; description: string; ingredients: RecipeIngredient list; equipments: RecipeEquipment list }
 
-/// Defines the operations a caller can perform on a Todo List
+/// Defines the operations a caller can perform on a Recipe
 type Command =
     /// Create a single equipment
     | AddEquipment of EquipmentProps

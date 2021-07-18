@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <Compile Include="Infrastructure.fs" />
-    <Compile Include="Todo.fs" />
+    <Compile Include="Recipe.fs" />
   </ItemGroup>
 
   <ItemGroup>

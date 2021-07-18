@@ -1,7 +1,7 @@
-﻿namespace recipeapp.Controllers
+﻿namespace RecipeApp.Controllers
 
 open Microsoft.AspNetCore.Mvc
-open recipeapp
+open RecipeApp
 
 type FromClientIdHeaderAttribute() = inherit FromHeaderAttribute(Name="COMPLETELY_INSECURE_CLIENT_ID")
 
@@ -10,12 +10,12 @@ type GetByIdArgsTemplate = { id: int }
 type EquipmentView = { id: int; url: string; tool: string }
 
 [<Route "[controller]"; ApiController>]
-type EquipmentsController(service: Todo.Service) =
+type EquipmentsController(service: Recipe.Service) =
     inherit ControllerBase()
 
-    let toProps (value : Todo.EquipmentView) : Todo.EquipmentProps = { tool = value.tool }
+    let toProps (value : Recipe.EquipmentView) : Recipe.EquipmentProps = { tool = value.tool }
 
-    member private this.WithUri(equipment : Todo.EquipmentView) : EquipmentView =
+    member private this.WithUri(equipment : Recipe.EquipmentView) : EquipmentView =
         let url = this.Url.RouteUrl("GetEquipment", { id=equipment.id }, this.Request.Scheme) // Supplying scheme is secret sauce for making it absolute as required by client
         { id = equipment.id; url = url; tool = equipment.tool }
 
@@ -32,7 +32,7 @@ type EquipmentsController(service: Todo.Service) =
     }
 
     [<HttpPost>]
-    member this.Post([<FromClientIdHeader>]clientId : ClientId, [<FromBody>]value : Todo.EquipmentView) : Async<EquipmentView> = async {
+    member this.Post([<FromClientIdHeader>]clientId : ClientId, [<FromBody>]value : Recipe.EquipmentView) : Async<EquipmentView> = async {
         let! createdEquipment = service.CreateEquipment(clientId, toProps value)
         return this.WithUri createdEquipment
     }

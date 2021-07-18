@@ -1,17 +1,17 @@
-﻿namespace recipeapp.Controllers
+﻿namespace RecipeApp.Controllers
 
 open Microsoft.AspNetCore.Mvc
-open recipeapp
+open RecipeApp
 
 type IngredientView = { id: int; url: string; food: string }
 
 [<Route "[controller]"; ApiController>]
-type IngredientsController(service: Todo.Service) =
+type IngredientsController(service: Recipe.Service) =
     inherit ControllerBase()
 
-    let toProps (value : Todo.IngredientView) : Todo.IngredientProps = { food = value.food }
+    let toProps (value : Recipe.IngredientView) : Recipe.IngredientProps = { food = value.food }
 
-    member private this.WithUri(ingredient : Todo.IngredientView) : IngredientView =
+    member private this.WithUri(ingredient : Recipe.IngredientView) : IngredientView =
         let url = this.Url.RouteUrl("GetIngredient", { id=ingredient.id }, this.Request.Scheme) // Supplying scheme is secret sauce for making it absolute as required by client
         { id = ingredient.id; url = url; food = ingredient.food }
 
@@ -28,7 +28,7 @@ type IngredientsController(service: Todo.Service) =
     }
 
     [<HttpPost>]
-    member this.Post([<FromClientIdHeader>]clientId : ClientId, [<FromBody>]value : Todo.IngredientView) : Async<IngredientView> = async {
+    member this.Post([<FromClientIdHeader>]clientId : ClientId, [<FromBody>]value : Recipe.IngredientView) : Async<IngredientView> = async {
         let! createdIngredient = service.CreateIngredient(clientId, toProps value)
         return this.WithUri createdIngredient
     }

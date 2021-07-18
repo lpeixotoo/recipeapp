@@ -1,27 +1,27 @@
-﻿namespace recipeapp.Controllers
+﻿namespace RecipeApp.Controllers
 
 open Microsoft.AspNetCore.Mvc
-open recipeapp
+open RecipeApp
 
 type RecipeView = {
     id: int;
     url: string;
     name: string;
     description: string;
-    ingredients: Todo.Types.RecipeIngredient list;
-    equipments: Todo.Types.RecipeEquipment list }
+    ingredients: Recipe.Types.RecipeIngredient list;
+    equipments: Recipe.Types.RecipeEquipment list }
 
 [<Route "[controller]"; ApiController>]
-type RecipesController(service: Todo.Service) =
+type RecipesController(service: Recipe.Service) =
     inherit ControllerBase()
 
-    let toProps (value : Todo.RecipeView) : Todo.RecipeProps = {
+    let toProps (value : Recipe.RecipeView) : Recipe.RecipeProps = {
         name =  value.name;
         description = value.description;
         ingredients = value.ingredients;
         equipments = value.equipments }
 
-    member private this.WithUri(recipe : Todo.RecipeView) : RecipeView =
+    member private this.WithUri(recipe : Recipe.RecipeView) : RecipeView =
         let url = this.Url.RouteUrl("GetRecipe", { id=recipe.id }, this.Request.Scheme) // Supplying scheme is secret sauce for making it absolute as required by client
         { id = recipe.id; url = url; name = recipe.name; description = recipe.description; ingredients = recipe.ingredients; equipments = recipe.equipments }
 
@@ -44,13 +44,13 @@ type RecipesController(service: Todo.Service) =
     }
 
     [<HttpPost>]
-    member this.Post([<FromClientIdHeader>]clientId : ClientId, [<FromBody>]value : Todo.RecipeView) : Async<RecipeView> = async {
+    member this.Post([<FromClientIdHeader>]clientId : ClientId, [<FromBody>]value : Recipe.RecipeView) : Async<RecipeView> = async {
         let! createdRecipe = service.CreateRecipe(clientId, toProps value)
         return this.WithUri createdRecipe
     }
 
     [<HttpPatch "{id}">]
-    member this.Patch([<FromClientIdHeader>]clientId : ClientId, id, [<FromBody>]value : Todo.RecipeView) : Async<RecipeView> = async {
+    member this.Patch([<FromClientIdHeader>]clientId : ClientId, id, [<FromBody>]value : Recipe.RecipeView) : Async<RecipeView> = async {
         let! updatedRecipe = service.PatchRecipe(clientId, id, toProps value)
         return this.WithUri updatedRecipe
     }
