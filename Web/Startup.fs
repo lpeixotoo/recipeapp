@@ -1,4 +1,4 @@
-namespace recipeapp.Web
+namespace RecipeApp.Web
 
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Mvc
@@ -7,7 +7,7 @@ open Microsoft.Extensions.Hosting
 open Prometheus
 open Serilog
 open System
-open recipeapp
+open RecipeApp
 
 /// Equinox store bindings
 module Storage =
@@ -47,10 +47,10 @@ module Services =
 
     /// Binds a storage independent Service's Handler's `resolve` function to a given Stream Policy using the StreamResolver
     type ServiceBuilder(resolver: StreamResolver) =
-         member _.CreateTodosService() =
-            let fold, initial = Todo.Fold.fold, Todo.Fold.initial
-            let snapshot = Todo.Fold.isOrigin, Todo.Fold.snapshot
-            Todo.create (resolver.Resolve(Todo.Events.codec, fold, initial, snapshot))
+         member _.CreateRecipesService() =
+            let fold, initial = Recipe.Fold.fold, Recipe.Fold.initial
+            let snapshot = Recipe.Fold.isOrigin, Recipe.Fold.snapshot
+            Recipe.create (resolver.Resolve(Recipe.Events.codec, fold, initial, snapshot))
 
     /// F# syntactic sugar for registering services
     type IServiceCollection with
@@ -65,7 +65,7 @@ module Services =
         services.Register(fun _sp -> Storage.connect storeCfg)
         services.Register(fun sp -> StreamResolver(sp.Resolve()))
         services.Register(fun sp -> ServiceBuilder(sp.Resolve()))
-        services.Register(fun sp -> sp.Resolve<ServiceBuilder>().CreateTodosService())
+        services.Register(fun sp -> sp.Resolve<ServiceBuilder>().CreateRecipesService())
         //services.Register(fun sp -> sp.Resolve<ServiceBuilder>().CreateThingService())
 
 /// Defines the Hosting configuration, including registration of the store and backend services

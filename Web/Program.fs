@@ -1,4 +1,4 @@
-module recipeapp.Web.Program
+module RecipeApp.Web.Program
 
 open Microsoft.AspNetCore
 open Microsoft.AspNetCore.Hosting
@@ -22,7 +22,7 @@ let createWebHostBuilder args : IWebHostBuilder =
         .UseSerilog()
         .UseStartup<Startup>()
 
-let [<Literal>] AppName = "TodoApp"
+let [<Literal>] AppName = "RecipeApp"
 
 [<EntryPoint>]
 let main argv =
