@@ -181,6 +181,20 @@ type Service internal (resolve : ClientId -> Equinox.Decider<Events.Event, Fold.
     member _.TryGetRecipe(clientId, recipeId)  : Async<RecipeView option> =
         query clientId (fun state -> state.recipes |> List.tryFind(fun recipe -> recipe.id = recipeId))
 
+    member _.ListPaginatedItems<'T>(pageSize : int) (pageNumber : int) (itemList : list<'T>) =
+        let chunckedList = itemList |> List.chunkBySize pageSize
+        /// Does not allow pagination overflow
+        let page = match (pageNumber > chunckedList.Length) with
+                   | true -> chunckedList.Length
+                   | false -> pageNumber
+
+        match chunckedList.IsEmpty with
+        | true -> List.empty<'T>
+        | false ->
+            chunckedList
+            |> List.skip (page - 1)
+            |> List.head
+
     member _.ListRecipesPerIngredient(clientId, ingredientId)  : Async<RecipeView list> =
         query clientId (fun state ->
             state.recipes
