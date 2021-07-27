@@ -21,6 +21,8 @@ type RecipesController(service: Recipe.Service) =
         ingredients = value.ingredients;
         equipments = value.equipments }
 
+    let [<Literal>] PageSize = 8
+
     member private this.WithUri(recipe : Recipe.RecipeView) : RecipeView =
         let url = this.Url.RouteUrl("GetRecipe", { id=recipe.id }, this.Request.Scheme) // Supplying scheme is secret sauce for making it absolute as required by client
         { id = recipe.id; url = url; name = recipe.name; description = recipe.description; ingredients = recipe.ingredients; equipments = recipe.equipments }
@@ -38,9 +40,16 @@ type RecipesController(service: Recipe.Service) =
     }
 
     [<HttpGet "ingredient/{ingredientId:int}">]
-    member this.GetRecipesByIngredient([<FromClientIdHeader>]clientId : ClientId, ingredientId) : Async<seq<RecipeView>> = async {
+    member this.GetRecipesByIngredient([<FromClientIdHeader>]clientId : ClientId, ingredientId, [<FromQueryAttribute>]page: int option) : Async<list<RecipeView>> = async {
         let! recipes = service.ListRecipesPerIngredient(clientId, ingredientId)
-        return seq { for recipe in recipes -> this.WithUri(recipe) }
+        // default page value
+        let pageNumber = match page with
+                         | Some page -> page
+                         | _ -> 1
+
+        return recipes
+        |> service.ListPaginatedItems<Recipe.RecipeView> PageSize pageNumber
+        |> List.map (function recipe -> this.WithUri(recipe))
     }
 
     [<HttpPost>]
