@@ -17,7 +17,6 @@ Here's an API overview:
 
 |              Description               |  Method | Endpoint  | Body  |
 |:-:|:-:|-|:-:|
-| <td colspan=4> Read Methods </td>
 | Get All Equipments                     |  `GET`  | `/equipment`                                             | - |
 | Get Equipment by ID                    |  `GET`  | `/equipment/<id>`                                        | - |
 | Get All Ingredients                    |  `GET`  | `/ingredients`                                           | - |
@@ -25,7 +24,6 @@ Here's an API overview:
 | Get All Recipes                        |  `GET`  | `/recipes`                                               | - |
 | Get Recipe by ID                       |  `GET`  | `/recipes/<id>`                                          | - |
 | Get Recipes By Ingredient (Paginated)  |  `GET`  | `/recipes/ingredient/<ingredient_id>?page=<page_number>` | - |
-| <td colspan=4> Write Methods </td>
 | Create Equipment                       |  `POST` | `/equipment`                                             | [schema](/docs/schemas/equipmentschema.json) |
 | Create Ingredient                      |  `POST` | `/ingredient`                                            | [schema](/docs/schemas/ingredientschema.json)|
 | Create Recipe                          |  `POST` | `/recipes`                                               | [schema](/docs/schemas/recipeschema.json) |
