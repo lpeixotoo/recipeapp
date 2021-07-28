@@ -1,0 +1,23 @@
+{
+    "name": "Recipe name",
+    "description": "A short description about the recipe",
+    "ingredients": [
+        {
+            "ingredient": {
+                "id": 1,
+                "food": "ingredient food name"
+            },
+            "quantity": 2,
+            "unity": "ingredient measurement unit"
+        }
+    ],
+    "equipments": [
+        {
+            "equipment": {
+                "id": 1,
+                "tool": "equipment name"
+            },
+            "quantity": 2,
+        }
+    ]
+}
