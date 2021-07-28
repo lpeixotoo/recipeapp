@@ -1,30 +1,32 @@
-# Equinox Web Template
+# Recipe App
 
-This project was generated using:
+The Recipe App is an attempt to leverage event source + MVC architectures to implement a CMS application
+with recipes, ingredients and equipments as entities.
 
-    dotnet new -i Equinox.Templates # just once, to install in the local templates store
-
-    dotnet new eqxweb -t --help # use --help to see options regarding storage subsystem configuration etc
-
-To generate the C# equivalent:
-
-    dotnet new eqxwebcs -t # use --help to see options regarding storage subsystem configuration etc
+# How to run
 
 To run a local instance of the Website on https://localhost:5001 and http://localhost:5000
 
     dotnet run -p Web
 
-----
+# API Usage
 
-To exercise the functionality of the sample TodoBackend (included because of the `-t` in the above), you can use the community project https://todobackend.com to drive the backend. _NB Jet does now own, control or audit https://todobackend.com; it is a third party site; please satisfy yourself that this is a safe thing use in your environment before using it._
+A set of postman/insomnia collection could be found at docs/collections folder.
 
-0. The generated code includes a CORS whitelisting for https://todobackend.com. _Cors configuration should be considered holistically in the overall design of an app - Equinox itself has no requirement of any specific configuration; you should ensure appropriate care and attention is paid to this aspect of securiting your application as normal_.
+But here's an API overview:
 
-1. Run the API compliance test suite (can be useful to isolate issues if the application is experiencing internal errors):
+|              Description               |  Method | Endpoint  | Body  |
+|:-:|:-:|-|:-:|
+| Get All Equipments                     |  `GET`  | `/equipment`                                             | - |
+| Get Equipment by ID                    |  `GET`  | `/equipment/<id>`                                        | - |
+| Get All Ingredients                    |  `GET`  | `/ingredients`                                           | - |
+| Get Ingredient by ID                   |  `GET`  | `/ingredients/<id>`                                      | - |
+| Get All Recipes                        |  `GET`  | `/recipes`                                               | - |
+| Get Recipe by ID                       |  `GET`  | `/recipes/<id>`                                          | - |
+| Get Recipes By Ingredient (Paginated)  |  `GET`  | `/recipes/ingredient/<ingredient_id>?page=<page_number>` | - |
+| Create Equipment                       |  `POST` | `/equipment`                                             | `{ tool: <string> }` |
+| Create Ingredient                      |  `POST` | `/ingredient`                                            | `{ food: <string> }` |
+| Create Recipe                          |  `POST` | `/recipes`                                               | `{ tool: <string> }` |
+| Update Recipe                          | `PATCH` | `/recipes/<id>`                                          | `{ food: <string> }` |
 
-       start https://www.todobackend.com/specs/index.html?https://localhost:5001/todos
-    
-2. Once you've confirmed that the backend is listening and fulfilling the API obligations, you can run the frontend app:
-
-       # Interactive UI; NB error handling is pretty minimal, so hitting refresh and/or F12 is recommended ;)
-       start https://www.todobackend.com/client/index.html?https://localhost:5001/todos
+# Roadmap
