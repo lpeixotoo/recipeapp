@@ -40,15 +40,15 @@ type RecipesController(service: Recipe.Service) =
     }
 
     [<HttpGet "ingredient/{ingredientId:int}">]
-    member this.GetRecipesByIngredient([<FromClientIdHeader>]clientId : ClientId, ingredientId, [<FromQueryAttribute>]page: int option) : Async<list<RecipeView>> = async {
+    member this.GetRecipesByIngredient([<FromClientIdHeader>]clientId : ClientId, ingredientId, [<FromQueryAttribute>]page: int) : Async<list<RecipeView>> = async {
         let! recipes = service.ListRecipesPerIngredient(clientId, ingredientId)
         // default page value
-        let pageNumber = match page with
-                         | Some page -> page
-                         | _ -> 1
+        let pageNumber = match page = 0 with
+                         | true -> 1
+                         | _ -> page
 
         return recipes
-        |> service.ListPaginatedItems<Recipe.RecipeView> PageSize pageNumber
+        |> service.ListPaginatedItems<Recipe.RecipeView> PageSize 1
         |> List.map (function recipe -> this.WithUri(recipe))
     }
 
